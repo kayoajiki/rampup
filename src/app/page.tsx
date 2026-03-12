@@ -7,7 +7,7 @@ export default async function Home() {
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
@@ -15,8 +15,9 @@ export default async function Home() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center flex-col gap-2">
         <p className="text-gray-500">セットアップ中です。管理者にお問い合わせください。</p>
+        <p className="text-xs text-red-400">{error?.message} / uid: {user.id}</p>
       </div>
     );
   }
