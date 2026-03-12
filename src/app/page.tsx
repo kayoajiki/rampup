@@ -15,9 +15,8 @@ export default async function Home() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-2">
+      <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-500">セットアップ中です。管理者にお問い合わせください。</p>
-        <p className="text-xs text-red-400">{error?.message} / uid: {user.id}</p>
       </div>
     );
   }
