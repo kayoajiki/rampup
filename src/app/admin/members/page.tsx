@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
+async function signOut() {
+  'use server';
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/');
+}
+
 const ROLE_LABEL: Record<string, string> = {
   admin: '管理者',
   manager: 'マネージャー',
@@ -37,7 +44,14 @@ export default async function AdminMembersPage() {
       {/* ヘッダー */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-gray-900">rampup</h1>
-        <span className="text-sm text-gray-500">{me.name ?? user.email}</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">{me.name ?? user.email}</span>
+          <form action={signOut}>
+            <button type="submit" className="text-sm text-gray-400 hover:text-gray-700 transition-colors duration-150">
+              ログアウト
+            </button>
+          </form>
+        </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
