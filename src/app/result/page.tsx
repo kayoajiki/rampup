@@ -80,57 +80,54 @@ function RadarChart({ scores }: { scores: ThemeScore[] }) {
   );
 }
 
-function Markdown({ text }: { text: string }) {
-  const lines = text.split("\n");
-  const elements: React.ReactNode[] = [];
-  let listItems: string[] = [];
+type ManualSection = { heading: string; bullets: string[] };
 
-  const flushList = (key: number) => {
-    if (listItems.length > 0) {
-      elements.push(
-        <ul key={key} className="list-disc pl-5 space-y-1 mb-4">
-          {listItems.map((item, i) => (
-            <li key={i} className="text-sm text-[#37352F] leading-relaxed">
-              {item}
-            </li>
-          ))}
-        </ul>
-      );
-      listItems = [];
+function parseManual(text: string): ManualSection[] {
+  const sections: ManualSection[] = [];
+  let currentHeading = "";
+  let bullets: string[] = [];
+
+  const flush = () => {
+    if (currentHeading) {
+      sections.push({ heading: currentHeading, bullets: [...bullets] });
+      bullets = [];
     }
   };
 
-  lines.forEach((line, idx) => {
-    if (line.startsWith("## ")) {
-      flushList(idx);
-      elements.push(
-        <h2 key={idx} className="font-bold text-lg text-[#37352F] mt-6 mb-2 border-b border-[#E9E9E7] pb-1">
-          {line.slice(3)}
-        </h2>
-      );
-    } else if (line.startsWith("### ")) {
-      flushList(idx);
-      elements.push(
-        <h3 key={idx} className="font-semibold text-base text-[#37352F] mt-4 mb-1">
-          {line.slice(4)}
-        </h3>
-      );
+  for (const line of text.split("\n")) {
+    if (line.startsWith("## ") || line.startsWith("# ")) {
+      flush();
+      currentHeading = line.replace(/^#+\s*/, "").trim();
     } else if (line.startsWith("- ")) {
-      listItems.push(line.slice(2));
-    } else if (line.trim() === "") {
-      flushList(idx);
-    } else {
-      flushList(idx);
-      elements.push(
-        <p key={idx} className="text-sm text-[#37352F] mb-3 leading-relaxed">
-          {line}
-        </p>
-      );
+      bullets.push(line.slice(2).trim());
     }
-  });
+  }
+  flush();
+  return sections;
+}
 
-  flushList(lines.length);
-  return <div>{elements}</div>;
+function ManualSections({ text }: { text: string }) {
+  const sections = parseManual(text);
+  if (sections.length === 0) {
+    return <p className="text-sm text-[#37352F] leading-relaxed whitespace-pre-wrap">{text}</p>;
+  }
+  return (
+    <div className="grid gap-3">
+      {sections.map((s, i) => (
+        <div key={i} className="border border-[#E9E9E7] rounded-xl p-4">
+          <h3 className="text-sm font-bold text-[#37352F] mb-2">{s.heading}</h3>
+          <ul className="space-y-1">
+            {s.bullets.map((b, j) => (
+              <li key={j} className="flex items-start gap-2 text-sm text-[#37352F]">
+                <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#1A6CF6]" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ResultPage() {
@@ -180,10 +177,17 @@ export default function ResultPage() {
 
         {/* Manual */}
         <section className="border-t border-[#E9E9E7] pt-6">
-          <Markdown text={data.manual} />
+          <h2 className="text-base font-semibold text-[#37352F] mb-4">取扱説明書</h2>
+          <ManualSections text={data.manual} />
         </section>
 
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <a
+            href="/report"
+            className="w-full rounded-lg bg-[#1A6CF6] px-4 py-3 text-center text-sm font-medium text-white hover:bg-[#1A5BE0] transition-colors"
+          >
+            詳細レポートを見る →
+          </a>
           <a href="/diagnosis" className="text-sm text-[#9B9A97] hover:text-[#37352F] underline">
             診断をやり直す
           </a>

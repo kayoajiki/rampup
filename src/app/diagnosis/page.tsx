@@ -49,7 +49,11 @@ export default function DiagnosisPage() {
       }
 
       const data = await res.json();
-      sessionStorage.setItem("rampup_result", JSON.stringify(data));
+      sessionStorage.setItem("rampup_result", JSON.stringify({
+        scores: data.scores,
+        manual: data.manual,
+        report: data.report,
+      }));
       window.location.href = "/result";
     } finally {
       setSubmitting(false);
