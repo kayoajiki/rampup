@@ -1,10 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-
-// ビルド時の静的プリレンダリングではなく、毎リクエストで評価させる
-export const dynamic = "force-dynamic";
 
 const SECTION_NAMES = [
   "この人に響くフレーム",
@@ -51,7 +48,7 @@ type Member = {
 };
 
 
-export default function MeetingNewPage() {
+function MeetingNewPage() {
   const searchParams = useSearchParams();
   const preselectedMemberId = searchParams.get("memberId") ?? "";
 
@@ -471,5 +468,13 @@ export default function MeetingNewPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense>
+      <MeetingNewPage />
+    </Suspense>
   );
 }
