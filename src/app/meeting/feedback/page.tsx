@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import GoalMeetingForm from "./GoalMeetingForm";
+import FeedbackMeetingForm from "./FeedbackMeetingForm";
 
-export default async function GoalMeetingPage({
+export default async function FeedbackMeetingPage({
   searchParams,
 }: {
   searchParams: Promise<{ memberId?: string }>;
@@ -40,14 +40,14 @@ export default async function GoalMeetingPage({
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-[#37352F]">
-            目標設定面談準備
+            査定FB面談準備
           </h1>
           <p className="text-sm text-[#9B9A97] mt-1">
-            メンバーのWillを引き出し、組織のMustと接続する対話ガイドを生成します
+            評価をメンバーのWillと接続し、次期への意欲を引き出す対話ガイドを生成します
           </p>
         </div>
         <Suspense>
-          <GoalMeetingForm
+          <FeedbackMeetingForm
             members={members ?? []}
             managerId={user.id}
             initialMemberId={initialMemberId ?? ""}

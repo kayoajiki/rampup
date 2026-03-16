@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Member = { id: string; name: string | null; email: string };
 
@@ -23,15 +23,32 @@ type MemberDetail = {
   manual: string | null;
   wcm: WcmData;
   milestones: MilestoneData;
-  lastPostMeetingNotes: string | null;
+  goalMeetingNotes: string | null;
+};
+
+const EVALUATION_RANKS = ["S", "A", "B", "C"] as const;
+type EvaluationRank = (typeof EVALUATION_RANKS)[number];
+
+const RANK_LABELS: Record<EvaluationRank, string> = {
+  S: "S：期待を大幅に超えた",
+  A: "A：期待を超えた",
+  B: "B：概ね期待通り",
+  C: "C：期待を下回った",
+};
+
+const RANK_COLORS: Record<EvaluationRank, string> = {
+  S: "border-purple-400 bg-purple-50 text-purple-700",
+  A: "border-blue-400 bg-blue-50 text-blue-700",
+  B: "border-green-400 bg-green-50 text-green-700",
+  C: "border-orange-400 bg-orange-50 text-orange-700",
 };
 
 const SECTION_NAMES = [
   "オープニング",
-  "Willの深掘り",
-  "Mustの伝え方",
-  "すり合わせ",
-  "目標の言語化",
+  "成果の承認と言語化",
+  "評価の届け方",
+  "振り返りの深掘り",
+  "次期への橋渡し",
 ] as const;
 
 function parseSections(text: string): Record<string, string> {
@@ -67,13 +84,13 @@ function parseSections(text: string): Record<string, string> {
 
 const SECTION_COLORS: Record<string, string> = {
   オープニング: "border-l-gray-300",
-  Willの深掘り: "border-l-pink-400",
-  Mustの伝え方: "border-l-green-400",
-  すり合わせ: "border-l-blue-400",
-  目標の言語化: "border-l-purple-400",
+  成果の承認と言語化: "border-l-yellow-400",
+  評価の届け方: "border-l-blue-400",
+  振り返りの深掘り: "border-l-orange-400",
+  次期への橋渡し: "border-l-green-400",
 };
 
-export default function GoalMeetingForm({
+export default function FeedbackMeetingForm({
   members,
   managerId,
   initialMemberId = "",
@@ -85,8 +102,12 @@ export default function GoalMeetingForm({
   const [selectedMemberId, setSelectedMemberId] = useState(initialMemberId);
   const [memberDetail, setMemberDetail] = useState<MemberDetail | null>(null);
   const [showStory, setShowStory] = useState(false);
-  const [managerExpectations, setManagerExpectations] = useState("");
-  const [previousNotes, setPreviousNotes] = useState("");
+  const [showGoalNotes, setShowGoalNotes] = useState(false);
+  const [evaluationRank, setEvaluationRank] = useState<EvaluationRank | "">(
+    ""
+  );
+  const [evaluationComment, setEvaluationComment] = useState("");
+  const [difficultToSay, setDifficultToSay] = useState("");
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<Record<string, string>>({});
   const [prepId, setPrepId] = useState<string | null>(null);
@@ -97,29 +118,23 @@ export default function GoalMeetingForm({
   useEffect(() => {
     if (!selectedMemberId) {
       setMemberDetail(null);
-      setPreviousNotes("");
       return;
     }
     setMemberDetail(null);
     fetch(
-      `/api/goal-meeting/member-detail?memberId=${encodeURIComponent(
+      `/api/feedback-meeting/member-detail?memberId=${encodeURIComponent(
         selectedMemberId
       )}`
     )
       .then((r) => r.json())
       .then((data: MemberDetail) => {
         setMemberDetail(data);
-        if (data.lastPostMeetingNotes) {
-          setPreviousNotes(data.lastPostMeetingNotes);
-        }
-      })
-      .catch(() => {
-        setMemberDetail(null);
       });
   }, [selectedMemberId]);
 
   const handleGenerate = useCallback(async () => {
-    if (!selectedMemberId || !managerExpectations.trim() || loading) return;
+    if (!selectedMemberId || !evaluationRank || !evaluationComment.trim() || loading)
+      return;
     setLoading(true);
     setSections({});
     setPrepId(null);
@@ -127,16 +142,18 @@ export default function GoalMeetingForm({
     setPostNotesSaved(false);
     setPostNotesSaving(false);
     try {
-      const res = await fetch("/api/generate-goal-meeting", {
+      const res = await fetch("/api/generate-feedback-meeting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           memberId: selectedMemberId,
-          managerExpectations,
+          evaluationRank,
+          evaluationComment,
+          difficultToSay,
           manual: memberDetail?.manual ?? null,
           wcm: memberDetail?.wcm ?? null,
           milestones: memberDetail?.milestones ?? [],
-          previousNotes: previousNotes || null,
+          goalMeetingNotes: memberDetail?.goalMeetingNotes ?? null,
         }),
       });
       const data = await res.json();
@@ -147,7 +164,14 @@ export default function GoalMeetingForm({
     } finally {
       setLoading(false);
     }
-  }, [selectedMemberId, managerExpectations, memberDetail, previousNotes, loading]);
+  }, [
+    selectedMemberId,
+    evaluationRank,
+    evaluationComment,
+    difficultToSay,
+    memberDetail,
+    loading,
+  ]);
 
   const handleSavePostNotes = useCallback(async () => {
     if (!prepId || !postMeetingNotes.trim()) return;
@@ -183,7 +207,9 @@ export default function GoalMeetingForm({
             setPrepId(null);
             setPostMeetingNotes("");
             setPostNotesSaved(false);
-            setManagerExpectations("");
+            setEvaluationRank("");
+            setEvaluationComment("");
+            setDifficultToSay("");
           }}
           className="w-full text-sm text-[#37352F] border border-[#E9E9E7] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A6CF6] bg-[#FAFAFA]"
         >
@@ -256,7 +282,6 @@ export default function GoalMeetingForm({
                   </div>
                 </div>
               )}
-
               {hasStory && (
                 <div>
                   <p className="text-xs font-medium text-[#9B9A97] mb-2">
@@ -292,7 +317,6 @@ export default function GoalMeetingForm({
                     ))}
                 </div>
               )}
-
               {memberDetail.manual && (
                 <div>
                   <p className="text-xs font-medium text-[#9B9A97] mb-2">
@@ -303,7 +327,6 @@ export default function GoalMeetingForm({
                   </p>
                 </div>
               )}
-
               {!hasStory && !hasMilestones && !memberDetail.manual && (
                 <p className="text-xs text-[#9B9A97]">
                   このメンバーはまだストーリーを入力していません。取扱説明書もありません。
@@ -315,47 +338,107 @@ export default function GoalMeetingForm({
       )}
 
       {selectedMemberId && memberDetail && (
-        <div className="bg-white rounded-xl border border-[#E9E9E7] px-5 py-4">
-          <label className="block text-xs font-medium text-[#9B9A97] mb-2">
-            前回の面談メモ
-          </label>
-          <textarea
-            value={previousNotes}
-            onChange={(e) => setPreviousNotes(e.target.value)}
-            placeholder="前回の目標設定面談で話したこと、決めたことなど"
-            rows={3}
-            className="w-full text-sm text-[#37352F] placeholder:text-[#C8C7C4] bg-[#FAFAFA] border border-[#E9E9E7] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-[#1A6CF6] focus:bg-white transition-colors"
-          />
-          {memberDetail.lastPostMeetingNotes &&
-            previousNotes === memberDetail.lastPostMeetingNotes && (
-              <p className="mt-1 text-xs text-[#9B9A97]">
-                前回の面談メモを引き継ぎました（編集できます）
-              </p>
-            )}
+        <div className="bg-white rounded-xl border border-[#E9E9E7] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowGoalNotes((p) => !p)}
+            className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-[#F7F6F3] transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[#37352F]">
+                📋 今期の合意目標
+              </span>
+              {!memberDetail.goalMeetingNotes && (
+                <span className="text-xs text-[#9B9A97] bg-[#F7F6F3] px-1.5 py-0.5 rounded">
+                  未記録
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-[#9B9A97]">
+              {showGoalNotes ? "▲ 閉じる" : "▼ 開く"}
+            </span>
+          </button>
+          {showGoalNotes && (
+            <div className="border-t border-[#E9E9E7] px-5 py-4">
+              {memberDetail.goalMeetingNotes ? (
+                <p className="text-sm text-[#37352F] leading-relaxed whitespace-pre-wrap">
+                  {memberDetail.goalMeetingNotes}
+                </p>
+              ) : (
+                <p className="text-sm text-[#9B9A97]">
+                  目標設定面談の面談後メモがまだ記録されていません。
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {selectedMemberId && (
-        <div className="bg-white rounded-xl border border-[#E9E9E7] px-5 py-4">
-          <label className="block text-xs font-medium text-[#37352F] mb-1.5">
-            今期このメンバーへの期待
-            <span className="text-red-400 ml-1">*</span>
-          </label>
-          <p className="text-xs text-[#9B9A97] mb-2">
-            組織・チームとしての期待役割・テーマを書いてください。これがMustとしてAIの生成に使われます。
-          </p>
-          <textarea
-            value={managerExpectations}
-            onChange={(e) => setManagerExpectations(e.target.value)}
-            placeholder="例：新人育成の主担当として、オンボーディングプログラムを設計してほしい。チームの品質基準の引き上げにも取り組んでほしい。"
-            rows={4}
-            className="w-full text-sm text-[#37352F] placeholder:text-[#C8C7C4] bg-[#FAFAFA] border border-[#E9E9E7] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-[#1A6CF6] focus:bg-white transition-colors"
-          />
+        <div className="bg-white rounded-xl border border-[#E9E9E7] px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[#37352F] mb-2">
+              評価ランク
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {EVALUATION_RANKS.map((rank) => (
+                <button
+                  key={rank}
+                  type="button"
+                  onClick={() => setEvaluationRank(rank)}
+                  className={`rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
+                    evaluationRank === rank
+                      ? RANK_COLORS[rank]
+                      : "border-[#E9E9E7] text-[#9B9A97] hover:border-[#C8C7C4]"
+                  }`}
+                >
+                  {rank}
+                </button>
+              ))}
+            </div>
+            {evaluationRank && (
+              <p className="mt-1.5 text-xs text-[#9B9A97]">
+                {RANK_LABELS[evaluationRank]}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#37352F] mb-1.5">
+              具体的な行動・成果の事実
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            <p className="text-xs text-[#9B9A97] mb-2">
+              「〇〇という行動で〇〇という結果が出た」形式で書くと、AIがFACTベースのガイドを生成します。
+            </p>
+            <textarea
+              value={evaluationComment}
+              onChange={(e) => setEvaluationComment(e.target.value)}
+              placeholder="例：プロジェクトXのリードとして期限内にリリースを達成した（成果事実）。一方、コードレビューでの指摘が属人的で、チームへの技術移転が進まなかった（課題事実）。"
+              rows={4}
+              className="w-full text-sm text-[#37352F] placeholder:text-[#C8C7C4] bg-[#FAFAFA] border border-[#E9E9E7] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-[#1A6CF6] focus:bg-white transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#9B9A97] mb-1.5">
+              伝えにくいこと（任意）
+            </label>
+            <textarea
+              value={difficultToSay}
+              onChange={(e) => setDifficultToSay(e.target.value)}
+              placeholder="例：本人は高い評価を期待していると思うが、今回はBになった。この差をどう伝えるか悩んでいる。"
+              rows={2}
+              className="w-full text-sm text-[#37352F] placeholder:text-[#C8C7C4] bg-[#FAFAFA] border border-[#E9E9E7] rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-[#1A6CF6] focus:bg-white transition-colors"
+            />
+          </div>
+
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={!managerExpectations.trim() || loading}
-            className="mt-3 w-full bg-[#1A6CF6] text-white rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-40 hover:bg-[#1A5BE0] transition-colors"
+            disabled={!evaluationRank || !evaluationComment.trim() || loading}
+            className="w-full bg-[#1A6CF6] text-white rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-40 hover:bg-[#1A5BE0] transition-colors"
           >
             {loading ? "生成中..." : "⚡ 面談ガイドを生成する"}
           </button>
@@ -366,7 +449,7 @@ export default function GoalMeetingForm({
         <div className="bg-white rounded-xl border border-[#E9E9E7] overflow-hidden">
           <div className="px-5 py-4 border-b border-[#E9E9E7]">
             <h2 className="text-sm font-semibold text-[#37352F]">
-              面談ガイド
+              査定FB 面談ガイド
             </h2>
             <p className="text-xs text-[#9B9A97] mt-0.5">
               面談中にこの画面を参照しながら対話を進めてください
@@ -395,12 +478,12 @@ export default function GoalMeetingForm({
                 面談後メモ
               </h3>
               <p className="text-xs text-[#9B9A97] mb-2">
-                合意した目標・決定事項を記録してください。次回の目標設定面談と査定FBに引き継がれます。
+                メンバーの反応・決まったこと・次期の成長テーマを記録してください。次回の査定FBと目標設定面談に引き継がれます。
               </p>
               <textarea
                 value={postMeetingNotes}
                 onChange={(e) => setPostMeetingNotes(e.target.value)}
-                placeholder="合意した目標、面談で決めたこと、次回確認したいことなど"
+                placeholder="伝えた評価内容、メンバーの反応、合意した次期の成長テーマ・行動目標"
                 rows={4}
                 className="w-full rounded-lg border border-[#E9E9E7] bg-white px-3 py-2 text-sm text-[#37352F] placeholder:text-[#9B9A97] focus:outline-none focus:ring-2 focus:ring-[#1A6CF6]/30 resize-none"
               />
