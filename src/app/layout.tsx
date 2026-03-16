@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
+import AppHeader from "@/components/AppHeader";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${notoSansJp.variable} antialiased`}
       >
+        <AppHeader />
         {children}
       </body>
     </html>

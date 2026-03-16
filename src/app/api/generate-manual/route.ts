@@ -84,13 +84,16 @@ export async function POST(request: Request) {
 
     // Supabaseに保存（ログイン済みユーザーのみ）
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       await supabase.from("diagnoses").insert({
         user_id: user.id,
         scores,
         manual,
         report,
+        shared_with_manager: true,
       });
     }
 

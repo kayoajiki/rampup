@@ -155,7 +155,11 @@ export default function ResultPage() {
     <main className="min-h-screen bg-[#FFFFFF]">
       <div className="mx-auto max-w-lg px-4 py-8">
         <h1 className="text-2xl font-bold text-[#37352F] mb-1">あなたの取扱説明書</h1>
-        <p className="text-sm text-[#9B9A97] mb-8">診断結果をもとに生成しました</p>
+        <p className="text-sm text-[#9B9A97] mb-3">診断結果をもとに生成しました</p>
+        <div className="mb-6 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-2.5">
+          <span className="text-green-600 text-sm">✓</span>
+          <p className="text-sm text-green-700">マネージャーに共有されました</p>
+        </div>
 
         {/* Radar Chart */}
         <section className="mb-8">
