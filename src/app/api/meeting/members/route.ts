@@ -30,7 +30,7 @@ export async function GET() {
       (users ?? []).map(async (u) => {
         const { data: diag } = await supabase
           .from("diagnoses")
-          .select("manual, shared_with_manager")
+          .select("manual")
           .eq("user_id", u.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -40,7 +40,7 @@ export async function GET() {
           name: u.name ?? "",
           email: u.email ?? "",
           hasDiagnosis: !!diag?.manual,
-          hasShared: !!diag?.shared_with_manager,
+          hasShared: true,
         };
       })
     );

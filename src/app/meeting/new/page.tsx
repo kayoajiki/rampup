@@ -194,8 +194,8 @@ function MeetingNewPage() {
   }, [sections]);
 
   return (
-    <main className="min-h-screen bg-[#FFFFFF]">
-      <div className="mx-auto max-w-lg px-4 py-8">
+    <main className="min-h-screen bg-[#F7F6F3]">
+      <div className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="text-2xl font-bold text-[#37352F] mb-1">1on1準備</h1>
         <p className="text-sm text-[#9B9A97] mb-6">
           メンバーを選んで、AIが今日の1on1の準備文を生成します
@@ -216,15 +216,11 @@ function MeetingNewPage() {
               <option
                 key={m.id}
                 value={m.id}
-                disabled={!m.hasDiagnosis || !m.hasShared}
-                className={!m.hasDiagnosis || !m.hasShared ? "text-[#9B9A97]" : ""}
+                disabled={!m.hasDiagnosis}
+                className={!m.hasDiagnosis ? "text-[#9B9A97]" : ""}
               >
                 {m.name || m.email || m.id}
-                {!m.hasDiagnosis
-                  ? "（診断未完了）"
-                  : !m.hasShared
-                    ? "（未共有）"
-                    : ""}
+                {!m.hasDiagnosis ? "（診断未完了）" : ""}
               </option>
             ))}
           </select>
