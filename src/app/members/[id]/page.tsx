@@ -271,7 +271,7 @@ export default async function MemberDetailPage({
               {diagnosis!.manual!
                 .split(/\n{2,}/)
                 .filter(Boolean)
-                .map((para, i) => (
+                .map((para: string, i: number) => (
                   <p
                     key={i}
                     className="text-sm text-[#37352F] whitespace-pre-wrap leading-relaxed mb-3 last:mb-0"
