@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+// ビルド時の静的プリレンダリングではなく、毎リクエストで評価させる
+export const dynamic = "force-dynamic";
+
 const SECTION_NAMES = [
   "この人に響くフレーム",
   "避けたほうがいい言い方",
